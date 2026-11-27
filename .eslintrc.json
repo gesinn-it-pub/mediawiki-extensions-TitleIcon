@@ -4,9 +4,5 @@
 		"wikimedia/client",
 		"wikimedia/jquery",
 		"wikimedia/mediawiki"
-	],
-	"rules": {
-		"no-undef": "off",
-		"no-unused-vars": "off"
-	}
+	]
 }
