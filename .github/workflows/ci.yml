@@ -25,7 +25,7 @@ jobs:
             smw_version: 7.4.0
             php_version: 8.3
             database_type: mysql
-            database_image: "mariadb:11.2"
+            database_image: "mariadb:12.3"
             coverage: true
             experimental: false
 
