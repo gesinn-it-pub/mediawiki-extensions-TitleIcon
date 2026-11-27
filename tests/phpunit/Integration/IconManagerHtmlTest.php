@@ -77,7 +77,11 @@ class IconManagerHtmlTest extends MediaWikiIntegrationTestCase {
 	public function testUnicodeIconIsRenderedAsLinkText(): void {
 		$html = $this->getHtml( new Icon( self::source(), '&#x1F469;<b>x</b>', Icon::ICON_TYPE_UNICODE ) );
 
-		$this->assertStringContainsString( "\u{1F469}&lt;b&gt;x&lt;/b&gt;", $html, 'character reference decoded, markup escaped' );
+		$this->assertStringContainsString(
+			"\u{1F469}&lt;b&gt;x&lt;/b&gt;",
+			$html,
+			'character reference decoded, markup escaped'
+		);
 		$this->assertStringNotContainsString( '<b>', $html );
 	}
 }
