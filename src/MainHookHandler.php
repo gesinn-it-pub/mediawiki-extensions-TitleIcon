@@ -26,7 +26,6 @@ use Config;
 use HtmlArmor;
 use MediaWiki\Hook\BeforePageDisplayHook;
 use MediaWiki\Hook\ParserAfterParseHook;
-use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Search\Hook\ShowSearchHitTitleHook;
 use MediaWiki\Title\Title;
 use OutputPage;
@@ -43,22 +42,16 @@ class MainHookHandler implements BeforePageDisplayHook, ShowSearchHitTitleHook, 
 	/** @var Config */
 	private $config;
 
-	/** @var LinkRenderer */
-	private $linkRenderer;
-
 	/**
 	 * @param IconManager $iconManager
 	 * @param Config $config
-	 * @param LinkRenderer $linkRenderer
 	 */
 	public function __construct(
 		IconManager $iconManager,
-		Config $config,
-		LinkRenderer $linkRenderer
+		Config $config
 	) {
 		$this->iconManager = $iconManager;
 		$this->config = $config;
-		$this->linkRenderer = $linkRenderer;
 	}
 
 	/**
@@ -102,10 +95,19 @@ class MainHookHandler implements BeforePageDisplayHook, ShowSearchHitTitleHook, 
 		}
 
 		$this->iconManager->getIcons( $title );
-		$html = $this->iconManager->getHTML( $title );
-		if ( strlen( $html ) > 0 ) {
-			$titleSnippet = new HtmlArmor( $html . $this->linkRenderer->makeLink( $title ) );
+		$iconHtml = $this->iconManager->getHTML( $title );
+		if ( $iconHtml === '' ) {
+			return;
 		}
+
+		// The snippet is rendered inside the link to the search hit, so the icons must not be links themselves.
+		$iconHtml = preg_replace( '#</?a\b[^>]*>#i', '', $iconHtml );
+		if ( $titleSnippet === null ) {
+			$titleHtml = htmlspecialchars( $title->getPrefixedText() );
+		} else {
+			$titleHtml = HtmlArmor::getHtml( $titleSnippet );
+		}
+		$titleSnippet = new HtmlArmor( $iconHtml . $titleHtml );
 	}
 
 	/**

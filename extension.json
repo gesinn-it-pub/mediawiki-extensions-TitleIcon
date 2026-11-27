@@ -36,8 +36,7 @@
 			"class": "MediaWiki\\Extension\\TitleIcon\\MainHookHandler",
 			"services": [
 				"TitleIcon:IconManager",
-				"MainConfig",
-				"LinkRenderer"
+				"MainConfig"
 			]
 		}
 	},
