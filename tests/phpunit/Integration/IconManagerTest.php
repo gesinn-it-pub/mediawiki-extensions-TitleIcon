@@ -290,4 +290,19 @@ class IconManagerTest extends MediaWikiIntegrationTestCase {
 			$message
 		);
 	}
+
+	/**
+	 * @covers \MediaWiki\Extension\TitleIcon\IconManager::getIcons
+	 */
+	public function testNamespaceIconDoesNotDependOnUserLanguage() {
+		// the namespace page is named after the content language, whatever language the viewing user has
+		$this->setUserLang( 'de' );
+		$manager = $this->getServiceContainer()->getService( 'TitleIcon:IconManager' );
+		$title = $this->setPageContent( '', null, '{{#titleicon_file:Icon3.png}}' )['page'];
+
+		$icons = $manager->getIcons( $title );
+
+		$this->assertCount( 1, $icons );
+		$this->assertSame( 'File:Icon3.png', $icons[0]->getIcon() );
+	}
 }

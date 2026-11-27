@@ -167,7 +167,7 @@ class IconManager {
 		if ( !$this->hideNamespaceIcons ) {
 			$namespaceText = $this->contentLanguage->getNsText( $page->getNamespace() );
 			if ( $namespaceText === '' ) {
-				$namespaceText = Message::newFromKey( 'Blanknamespace' )->plain();
+				$namespaceText = Message::newFromKey( 'Blanknamespace' )->inContentLanguage()->plain();
 			}
 			$namespacePage = Title::newFromText( $namespaceText, NS_PROJECT );
 			// if the Blanknamespace message contains invalid characters (e.g. in the x-xss language),
