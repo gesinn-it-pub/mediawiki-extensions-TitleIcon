@@ -22,15 +22,15 @@
 
 namespace MediaWiki\Extension\TitleIcon;
 
-use Config;
 use HtmlArmor;
+use MediaWiki\Config\Config;
 use MediaWiki\Hook\BeforePageDisplayHook;
+use MediaWiki\Output\OutputPage;
 use MediaWiki\Search\Hook\ShowSearchHitTitleHook;
+use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\Title;
-use OutputPage;
 use SearchResult;
 use Skin;
-use SpecialSearch;
 
 class MainHookHandler implements BeforePageDisplayHook, ShowSearchHitTitleHook {
 	/** @var IconManager */

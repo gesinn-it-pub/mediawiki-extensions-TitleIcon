@@ -24,24 +24,24 @@
 
 namespace MediaWiki\Extension\TitleIcon;
 
-use Config;
 use HtmlArmor;
-use Language;
+use MediaWiki\Config\Config;
 use MediaWiki\Json\JsonCodec;
+use MediaWiki\Language\Language;
 use MediaWiki\Linker\Linker;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Message\Message;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\PageProps;
 use MediaWiki\Page\PageReference;
+use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserFactory;
-use Mediawiki\Title\Title;
-use Message;
-use Parser;
+use MediaWiki\Parser\Sanitizer;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleParser;
 use RepoGroup;
-use Sanitizer;
-use TitleParser;
 
 class IconManager {
 	/** @var Config */

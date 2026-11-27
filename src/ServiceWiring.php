@@ -22,8 +22,8 @@
 
 namespace MediaWiki\Extension\TitleIcon;
 
-use ExtensionRegistry;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Registration\ExtensionRegistry;
 
 return [
 	'TitleIcon:IconManager' => static function ( MediaWikiServices $services ): IconManager {

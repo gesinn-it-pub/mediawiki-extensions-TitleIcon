@@ -26,10 +26,10 @@ use HtmlArmor;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Extension\TitleIcon\IconManager;
 use MediaWiki\Extension\TitleIcon\MainHookHandler;
+use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use SearchResult;
-use SpecialSearch;
 
 /**
  * @group Database

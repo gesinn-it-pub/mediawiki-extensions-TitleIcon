@@ -22,12 +22,12 @@
 
 namespace MediaWiki\Extension\TitleIcon;
 
-use MalformedTitleException;
 use MediaWiki\Hook\ParserFirstCallInitHook;
 use MediaWiki\Page\PageReference;
 use MediaWiki\Page\PageReferenceValue;
-use Parser;
-use TitleParser;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Title\MalformedTitleException;
+use MediaWiki\Title\TitleParser;
 
 class InitHookHandler implements ParserFirstCallInitHook {
 	/** @var IconManager */

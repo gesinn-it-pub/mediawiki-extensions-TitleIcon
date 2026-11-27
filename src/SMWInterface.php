@@ -22,8 +22,8 @@
 
 namespace MediaWiki\Extension\TitleIcon;
 
-use ExtensionRegistry;
 use MediaWiki\Page\PageReference;
+use MediaWiki\Registration\ExtensionRegistry;
 use SMW\DIProperty;
 use SMW\DIWikiPage;
 use SMW\StoreFactory;
