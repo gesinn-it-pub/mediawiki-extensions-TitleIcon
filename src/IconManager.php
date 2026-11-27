@@ -30,6 +30,7 @@ use Language;
 use MediaWiki\Json\JsonCodec;
 use MediaWiki\Linker\Linker;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\PageProps;
@@ -333,6 +334,16 @@ class IconManager {
 	}
 
 	/**
+	 * The tooltip of a file icon is the file name without namespace prefix and without file extension.
+	 *
+	 * @param LinkTarget $file
+	 * @return string
+	 */
+	public static function getFileTooltip( LinkTarget $file ): string {
+		return pathinfo( $file->getText(), PATHINFO_FILENAME );
+	}
+
+	/**
 	 * @param Icon $icon
 	 * @return string
 	 */
@@ -346,10 +357,7 @@ class IconManager {
 		}
 
 		if ( $this->config->get( 'TitleIcon_UseFileNameAsToolTip' ) ) {
-			$tooltip = $filename;
-			if ( strpos( $tooltip, '.' ) !== false ) {
-				$tooltip = substr( $tooltip, 0, strpos( $tooltip, '.' ) );
-			}
+			$tooltip = self::getFileTooltip( $filetitle );
 		} else {
 			$tooltip = $icon->getSource();
 		}
