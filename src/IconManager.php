@@ -404,6 +404,11 @@ class IconManager {
 	 * @return string
 	 */
 	private function getOOUIIconHTML( Icon $icon ): string {
+		// the name is appended to the path of the OOUI icon directory, so it must be a plain file name
+		if ( !preg_match( '/^[A-Za-z0-9_-]+\.svg$/', $icon->getIcon() ) ) {
+			return '';
+		}
+
 		$linkTitle = $icon->getLink();
 		if ( !$linkTitle ) {
 			$linkTitle = $icon->getSource();
