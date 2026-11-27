@@ -25,17 +25,14 @@ namespace MediaWiki\Extension\TitleIcon;
 use Config;
 use HtmlArmor;
 use MediaWiki\Hook\BeforePageDisplayHook;
-use MediaWiki\Hook\ParserAfterParseHook;
 use MediaWiki\Search\Hook\ShowSearchHitTitleHook;
 use MediaWiki\Title\Title;
 use OutputPage;
-use Parser;
 use SearchResult;
 use Skin;
 use SpecialSearch;
-use StripState;
 
-class MainHookHandler implements BeforePageDisplayHook, ShowSearchHitTitleHook, ParserAfterParseHook {
+class MainHookHandler implements BeforePageDisplayHook, ShowSearchHitTitleHook {
 	/** @var IconManager */
 	private $iconManager;
 
@@ -68,9 +65,8 @@ class MainHookHandler implements BeforePageDisplayHook, ShowSearchHitTitleHook, 
 			return;
 		}
 
-		$this->iconManager->getIcons( $title );
-		$html = $this->iconManager->getHTML( $title );
-		if ( strlen( $html ) > 0 ) {
+		$html = $this->iconManager->getHTML( $this->iconManager->getIcons( $title ) );
+		if ( $html !== '' ) {
 			$out->addJsConfigVars( 'TitleIconHTML', $html );
 			$out->addJsConfigVars( 'TitleIconSelector', $this->config->get( 'TitleIcon_CSSSelector' ) );
 			$out->addModules( 'ext.TitleIcon' );
@@ -94,8 +90,7 @@ class MainHookHandler implements BeforePageDisplayHook, ShowSearchHitTitleHook, 
 			return;
 		}
 
-		$this->iconManager->getIcons( $title );
-		$iconHtml = $this->iconManager->getHTML( $title );
+		$iconHtml = $this->iconManager->getHTML( $this->iconManager->getIcons( $title ) );
 		if ( $iconHtml === '' ) {
 			return;
 		}
@@ -108,15 +103,5 @@ class MainHookHandler implements BeforePageDisplayHook, ShowSearchHitTitleHook, 
 			$titleHtml = HtmlArmor::getHtml( $titleSnippet );
 		}
 		$titleSnippet = new HtmlArmor( $iconHtml . $titleHtml );
-	}
-
-	/**
-	 * @param Parser $parser
-	 * @param string &$text
-	 * @param StripState $stripState
-	 * @return bool|void
-	 */
-	public function onParserAfterParse( $parser, &$text, $stripState ) {
-		$this->iconManager->saveIcons( $parser );
 	}
 }

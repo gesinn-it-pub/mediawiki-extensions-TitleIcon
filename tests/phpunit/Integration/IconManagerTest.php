@@ -278,9 +278,12 @@ class IconManagerTest extends MediaWikiIntegrationTestCase {
 		array $expected,
 		string $message
 	) {
-		$manager = $this->getServiceContainer()->getService( 'TitleIcon:IconManager' );
 		$jsonCodec = $this->getServiceContainer()->getJsonCodec();
 		$title = $this->setPageContent( $testPageContent, $testCategoryContent, $testNamespaceContent )['page'];
+
+		// A page view is usually served from the parser cache, so the manager that parsed the page is gone.
+		$this->getServiceContainer()->resetServiceForTesting( 'TitleIcon:IconManager' );
+		$manager = $this->getServiceContainer()->getService( 'TitleIcon:IconManager' );
 
 		$actual = $manager->getIcons( $title );
 
@@ -304,5 +307,34 @@ class IconManagerTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertCount( 1, $icons );
 		$this->assertSame( 'File:Icon3.png', $icons[0]->getIcon() );
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\TitleIcon\IconManager::getIcons
+	 */
+	public function testHideTitleIconOnOnePageDoesNotAffectOtherPages() {
+		$hidden = $this->insertPage( 'Hidden Page', '{{#titleicon_file:Icon1.png}}{{#hidetitleicon:all}}' )['title'];
+		$other = $this->insertPage( 'Other Page', '{{#titleicon_file:Icon2.png}}' )['title'];
+		$manager = $this->getServiceContainer()->getService( 'TitleIcon:IconManager' );
+
+		$this->assertSame( [], $manager->getIcons( $hidden ), 'hidden page shows no icons' );
+		$icons = $manager->getIcons( $other );
+
+		$this->assertCount( 1, $icons, 'other page keeps its icon' );
+		$this->assertSame( 'File:Icon2.png', $icons[0]->getIcon() );
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\TitleIcon\IconManager::getIcons
+	 */
+	public function testRemovedIconsAreNotKeptWhenAPageIsParsedAgain() {
+		$title = $this->insertPage( 'Test Page', '{{#titleicon_file:Icon1.png}}' )['title'];
+		$this->editPage( $title, '{{#titleicon_file:Icon2.png}}' );
+		$manager = $this->getServiceContainer()->getService( 'TitleIcon:IconManager' );
+
+		$icons = $manager->getIcons( $title );
+
+		$this->assertCount( 1, $icons );
+		$this->assertSame( 'File:Icon2.png', $icons[0]->getIcon() );
 	}
 }

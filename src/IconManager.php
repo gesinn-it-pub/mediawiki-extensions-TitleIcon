@@ -35,6 +35,7 @@ use MediaWiki\MainConfigNames;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\PageProps;
 use MediaWiki\Page\PageReference;
+use MediaWiki\Parser\ParserFactory;
 use Mediawiki\Title\Title;
 use Message;
 use Parser;
@@ -46,8 +47,8 @@ class IconManager {
 	/** @var Config */
 	private $config;
 
-	/** @var Parser */
-	private $parser;
+	/** @var ParserFactory */
+	private $parserFactory;
 
 	/** @var TitleParser */
 	private $titleParser;
@@ -70,21 +71,17 @@ class IconManager {
 	/** @var SMWInterface */
 	private $smwInterface;
 
-	/** @var Icon[][] array indexed by page name of title icons that are defined on that page */
-	private $icons;
+	/** Name of the page property that lists the icon sources hidden on a page, comma separated. */
+	public const HIDE_PROPERTY_NAME = 'titleicons-hide';
 
-	/** @var bool */
-	private $hidePageIcons = false;
-
-	/** @var bool */
-	private $hideCategoryIcons = false;
-
-	/** @var bool */
-	private $hideNamespaceIcons = false;
+	private const HIDE_PAGE = 'page';
+	private const HIDE_CATEGORY = 'category';
+	private const HIDE_NAMESPACE = 'namespace';
+	private const HIDE_TARGETS = [ self::HIDE_PAGE, self::HIDE_CATEGORY, self::HIDE_NAMESPACE ];
 
 	/**
 	 * @param Config $config
-	 * @param Parser $parser
+	 * @param ParserFactory $parserFactory
 	 * @param TitleParser $titleParser
 	 * @param Language $contentLanguage
 	 * @param PageProps $pageProps
@@ -95,7 +92,7 @@ class IconManager {
 	 */
 	public function __construct(
 		Config $config,
-		Parser $parser,
+		ParserFactory $parserFactory,
 		TitleParser $titleParser,
 		Language $contentLanguage,
 		PageProps $pageProps,
@@ -105,7 +102,7 @@ class IconManager {
 		SMWInterface $smwInterface
 	) {
 		$this->config = $config;
-		$this->parser = $parser;
+		$this->parserFactory = $parserFactory;
 		$this->titleParser = $titleParser;
 		$this->contentLanguage = $contentLanguage;
 		$this->pageProps = $pageProps;
@@ -113,7 +110,6 @@ class IconManager {
 		$this->linkRenderer = $linkRenderer;
 		$this->jsonCodec = $jsonCodec;
 		$this->smwInterface = $smwInterface;
-		$this->icons = [];
 	}
 
 	/**
@@ -130,58 +126,41 @@ class IconManager {
 	}
 
 	/**
+	 * Icons of a page: the ones defined on the page itself, on its categories and on its namespace, and the ones
+	 * from the Semantic MediaWiki property. This only depends on the stored page data, so it gives the same result
+	 * whether or not the page has just been parsed.
+	 *
 	 * @param PageIdentity $page
 	 * @return Icon[]
 	 */
 	public function getIcons( PageIdentity $page ): array {
-		$key = self::getKeyForPage( $page );
-		if ( !isset( $this->icons[$key] ) ) {
-			$this->icons[$key] = [];
-		}
+		$hidden = $this->getHiddenSources( $page );
+
+		/** @var Icon[] $icons */
+		$icons = [];
 
 		/** @var PageReference[] $queryTargets */
 		$queryTargets = [];
 
-		$this->queryHideTitleIcon( $page );
-
-		if ( !$this->hidePageIcons ) {
+		if ( !in_array( self::HIDE_PAGE, $hidden, true ) ) {
 			$queryTargets[] = $page;
-			$this->queryPagePropsIcons( $page );
-		} else {
-			$this->icons[$key] = [];
+			$this->addPagePropsIcons( $icons, $page );
 		}
 
-		if ( !$this->hideCategoryIcons ) {
-			$categories = $this->getCategories( $page );
-			foreach ( $categories as $category ) {
+		if ( !in_array( self::HIDE_CATEGORY, $hidden, true ) ) {
+			foreach ( $this->getCategories( $page ) as $category ) {
 				$queryTargets[] = $category;
-				$this->queryPagePropsIcons( $category );
-				$categoryKey = self::getKeyForPage( $category );
-				if ( isset( $this->icons[$categoryKey] ) ) {
-					foreach ( $this->icons[$categoryKey] as $icon ) {
-						$this->addIcon( $page, $icon );
-					}
-				}
+				$this->addPagePropsIcons( $icons, $category );
 			}
 		}
 
-		if ( !$this->hideNamespaceIcons ) {
-			$namespaceText = $this->contentLanguage->getNsText( $page->getNamespace() );
-			if ( $namespaceText === '' ) {
-				$namespaceText = Message::newFromKey( 'Blanknamespace' )->inContentLanguage()->plain();
-			}
-			$namespacePage = Title::newFromText( $namespaceText, NS_PROJECT );
+		if ( !in_array( self::HIDE_NAMESPACE, $hidden, true ) ) {
+			$namespacePage = $this->getNamespacePage( $page );
 			// if the Blanknamespace message contains invalid characters (e.g. in the x-xss language),
 			// $namespacePage is null as the title is invalid
 			if ( $namespacePage !== null ) {
 				$queryTargets[] = $namespacePage;
-				$this->queryPagePropsIcons( $namespacePage );
-				$namespaceKey = self::getKeyForPage( $namespacePage );
-				if ( isset( $this->icons[$namespaceKey] ) ) {
-					foreach ( $this->icons[$namespaceKey] as $icon ) {
-						$this->addIcon( $page, $icon );
-					}
-				}
+				$this->addPagePropsIcons( $icons, $namespacePage );
 			}
 		}
 
@@ -191,95 +170,104 @@ class IconManager {
 				$this->config->get( 'TitleIcon_TitleIconPropertyName' )
 			);
 			foreach ( $smwIcons as $smwIcon ) {
-				$this->addIcon(
-					$page,
-					new Icon( $queryTarget, $smwIcon, Icon::ICON_TYPE_FILE )
-				);
+				self::addIcon( $icons, new Icon( $queryTarget, $smwIcon, Icon::ICON_TYPE_FILE ) );
 			}
 		}
 
-		return $this->icons[$key];
+		return $icons;
 	}
 
 	/**
+	 * The page that holds the icons of a namespace, named after the namespace in the content language.
+	 *
+	 * @param PageReference $page
+	 * @return Title|null
+	 */
+	private function getNamespacePage( PageReference $page ): ?Title {
+		$namespaceText = $this->contentLanguage->getNsText( $page->getNamespace() );
+		if ( $namespaceText === '' ) {
+			$namespaceText = Message::newFromKey( 'Blanknamespace' )->inContentLanguage()->plain();
+		}
+		return Title::newFromText( $namespaceText, NS_PROJECT );
+	}
+
+	/**
+	 * @param Icon[] &$icons
 	 * @param PageIdentity $page
 	 */
-	private function queryPagePropsIcons( PageIdentity $page ): void {
-		$icons = $this->pageProps->getProperties( $page, Icon::ICON_PROPERTY_NAME );
+	private function addPagePropsIcons( array &$icons, PageIdentity $page ): void {
+		$stored = $this->pageProps->getProperties( $page, Icon::ICON_PROPERTY_NAME );
 		$pageId = $page->getId();
-		if ( $icons && isset( $icons[$pageId] ) ) {
-			$icons = $this->jsonCodec->deserialize( $icons[$pageId] );
-			if ( $icons ) {
-				foreach ( $icons as $icon ) {
-					// TODO: Temporary compatibility for MediaWiki <1.40, see T312589
-					if ( !( $icon instanceof Icon ) ) {
-						$icon = $this->jsonCodec->deserialize( $icon );
-					}
-					if ( $icon ) {
-						$this->addIcon( $page, $icon );
-					}
+		if ( isset( $stored[$pageId] ) ) {
+			foreach ( $this->deserializeIcons( $stored[$pageId] ) as $icon ) {
+				self::addIcon( $icons, $icon );
+			}
+		}
+	}
+
+	/**
+	 * @param string|null $json
+	 * @return Icon[]
+	 */
+	private function deserializeIcons( ?string $json ): array {
+		$result = [];
+		$icons = $json ? $this->jsonCodec->deserialize( $json ) : null;
+		if ( $icons ) {
+			foreach ( $icons as $icon ) {
+				// TODO: Temporary compatibility for MediaWiki <1.40, see T312589
+				if ( !( $icon instanceof Icon ) ) {
+					$icon = $this->jsonCodec->deserialize( $icon );
+				}
+				if ( $icon ) {
+					$result[] = $icon;
 				}
 			}
 		}
+		return $result;
 	}
 
 	/**
-	 * @param PageReference $source
+	 * Add an icon to the output of the page that is being parsed. It is stored as page property.
+	 *
+	 * @param Parser $parser
 	 * @param string $type
 	 * @param string|null $icon
 	 * @param PageReference|null $link
 	 */
-	public function parseIcons( PageReference $source, string $type, ?string $icon, ?PageReference $link ) {
-		if ( !$icon ) {
+	public function parseIcons( Parser $parser, string $type, ?string $icon, ?PageReference $link ): void {
+		$source = $parser->getPage();
+		if ( !$icon || !$source ) {
 			return;
 		}
 
-		$this->addIcon( $source, new Icon( $source, $icon, $type, $link ) );
-	}
-
-	/**
-	 * @param Parser $parser
-	 */
-	public function saveIcons( Parser $parser ): void {
-		$title = Title::castFromPageReference( $parser->getPage() );
-		if ( $title ) {
-			$key = self::getKeyForPage( $title );
-			if ( isset( $this->icons[$key] ) ) {
-				$parser->getOutput()->setPageProperty(
-					Icon::ICON_PROPERTY_NAME,
-					$this->jsonCodec->serialize( $this->icons[$key] )
-				);
-			}
+		$output = $parser->getOutput();
+		$stored = $output->getPageProperty( Icon::ICON_PROPERTY_NAME );
+		$icons = $this->deserializeIcons( is_string( $stored ) ? $stored : null );
+		$count = count( $icons );
+		self::addIcon( $icons, new Icon( $source, $icon, $type, $link ) );
+		if ( count( $icons ) !== $count ) {
+			$output->setPageProperty( Icon::ICON_PROPERTY_NAME, $this->jsonCodec->serialize( $icons ) );
 		}
 	}
 
 	/**
-	 * @param PageReference $source
+	 * @param Icon[] &$icons
 	 * @param Icon $icon
 	 */
-	private function addIcon( PageReference $source, Icon $icon ): void {
-		$key = self::getKeyForPage( $source );
-		if ( !isset( $this->icons[$key] ) ) {
-			$this->icons[$key] = [];
-		}
-		foreach ( $this->icons[$key] as $savedIcon ) {
+	private static function addIcon( array &$icons, Icon $icon ): void {
+		foreach ( $icons as $savedIcon ) {
 			if ( $icon->getType() === $savedIcon->getType() && $icon->getIcon() === $savedIcon->getIcon() ) {
 				return;
 			}
 		}
-		$this->icons[$key][] = $icon;
+		$icons[] = $icon;
 	}
 
 	/**
-	 * @param PageReference $source
+	 * @param Icon[] $icons
 	 * @return string
 	 */
-	public function getHTML( PageReference $source ): string {
-		$key = self::getKeyForPage( $source );
-		if ( !isset( $this->icons[$key] ) ) {
-			return '';
-		}
-		$icons = $this->icons[$key];
+	public function getHTML( array $icons ): string {
 		$iconhtml = '';
 		foreach ( $icons as $icon ) {
 			switch ( $icon->getType() ) {
@@ -297,40 +285,63 @@ class IconManager {
 	}
 
 	/**
-	 * @param string|null $flag 'page', 'category', or 'all'
+	 * Hide icons of the page that is being parsed. It is stored as page property, so it also applies when the
+	 * page is later served from the parser cache.
+	 *
+	 * @param Parser $parser
+	 * @param string|null $flag 'page', 'category', 'namespace', or 'all'
 	 */
-	public function hideTitleIcon( ?string $flag ): void {
+	public function hideTitleIcon( Parser $parser, ?string $flag ): void {
+		$targets = self::parseHideFlag( $flag );
+		if ( $targets === [] ) {
+			return;
+		}
+
+		$output = $parser->getOutput();
+		$stored = $output->getPageProperty( self::HIDE_PROPERTY_NAME );
+		$current = is_string( $stored ) && $stored !== '' ? explode( ',', $stored ) : [];
+		$hidden = array_values( array_intersect( self::HIDE_TARGETS, array_merge( $current, $targets ) ) );
+		$output->setPageProperty( self::HIDE_PROPERTY_NAME, implode( ',', $hidden ) );
+	}
+
+	/**
+	 * @param string|null $flag
+	 * @return string[] the icon sources the flag hides
+	 */
+	private static function parseHideFlag( ?string $flag ): array {
 		switch ( $flag ) {
-			case 'page':
-				$this->hidePageIcons = true;
-				break;
-			case 'category':
-				$this->hideCategoryIcons = true;
-				break;
-			case 'namespace':
-				$this->hideNamespaceIcons = true;
-				break;
+			case self::HIDE_PAGE:
+			case self::HIDE_CATEGORY:
+			case self::HIDE_NAMESPACE:
+				return [ $flag ];
 			case 'all':
-				$this->hidePageIcons = true;
-				$this->hideCategoryIcons = true;
-				$this->hideNamespaceIcons = true;
+				return self::HIDE_TARGETS;
+			default:
+				return [];
 		}
 	}
 
 	/**
-	 * @param PageReference $page
+	 * @param PageIdentity $page
+	 * @return string[] the icon sources that are hidden on the page
 	 */
-	private function queryHideTitleIcon( PageReference $page ): void {
-		$title = Title::castFromPageReference( $page );
-		if ( $title ) {
-			$results = $this->smwInterface->getPropertyValues(
-				$title,
-				$this->config->get( 'TitleIcon_HideTitleIconPropertyName' )
-			);
-			foreach ( $results as $result ) {
-				$this->hideTitleIcon( $result );
-			}
+	private function getHiddenSources( PageIdentity $page ): array {
+		$flags = [];
+		$stored = $this->pageProps->getProperties( $page, self::HIDE_PROPERTY_NAME );
+		$pageId = $page->getId();
+		if ( isset( $stored[$pageId] ) ) {
+			$flags = explode( ',', (string)$stored[$pageId] );
 		}
+		$flags = array_merge( $flags, $this->smwInterface->getPropertyValues(
+			$page,
+			$this->config->get( 'TitleIcon_HideTitleIconPropertyName' )
+		) );
+
+		$hidden = [];
+		foreach ( $flags as $flag ) {
+			$hidden = array_merge( $hidden, self::parseHideFlag( $flag ) );
+		}
+		return array_values( array_unique( $hidden ) );
 	}
 
 	/**
@@ -379,7 +390,8 @@ class IconManager {
 		];
 
 		return Linker::makeImageLink(
-			$this->parser,
+			// resolved here, as the parser itself triggers the hooks that create this manager
+			$this->parserFactory->getInstance(),
 			$filetitle,
 			$imagefile,
 			$frameParams,
@@ -419,13 +431,5 @@ class IconManager {
 			$linkTitle,
 			Sanitizer::decodeCharReferences( $icon->getIcon() )
 		) . "\u{00A0}";
-	}
-
-	/**
-	 * @param PageReference $page
-	 * @return string
-	 */
-	private static function getKeyForPage( PageReference $page ): string {
-		return 'ns' . $page->getNamespace() . ':' . $page->getDBkey();
 	}
 }

@@ -25,12 +25,15 @@
 	"Hooks": {
 		"ParserFirstCallInit": "init",
 		"BeforePageDisplay": "main",
-		"ShowSearchHitTitle": "main",
-		"ParserAfterParse": "main"
+		"ShowSearchHitTitle": "main"
 	},
 	"HookHandlers": {
 		"init": {
-			"class": "MediaWiki\\Extension\\TitleIcon\\InitHookHandler"
+			"class": "MediaWiki\\Extension\\TitleIcon\\InitHookHandler",
+			"services": [
+				"TitleIcon:IconManager",
+				"TitleParser"
+			]
 		},
 		"main": {
 			"class": "MediaWiki\\Extension\\TitleIcon\\MainHookHandler",

@@ -29,7 +29,7 @@ return [
 	'TitleIcon:IconManager' => static function ( MediaWikiServices $services ): IconManager {
 		return new IconManager(
 			$services->getMainConfig(),
-			$services->getParser(),
+			$services->getParserFactory(),
 			$services->getTitleParser(),
 			$services->getContentLanguage(),
 			$services->getPageProps(),
