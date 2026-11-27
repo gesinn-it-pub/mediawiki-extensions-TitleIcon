@@ -2,6 +2,8 @@
 <ruleset>
 	<rule ref="./vendor/mediawiki/mediawiki-codesniffer/MediaWiki" />
 	<file>.</file>
+	<exclude-pattern>build/</exclude-pattern>
+	<exclude-pattern>coverage/</exclude-pattern>
 	<arg name="extensions" value="php" />
 	<arg name="encoding" value="UTF-8" />
 </ruleset>

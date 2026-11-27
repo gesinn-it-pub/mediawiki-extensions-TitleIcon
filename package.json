@@ -2,7 +2,8 @@
 	"name": "TitleIcon",
 	"private": true,
 	"scripts": {
-		"test": "grunt test"
+		"test": "grunt test",
+		"test-coverage": "grunt test"
 	},
 	"devDependencies": {
 		"eslint-config-wikimedia": "0.32.6",
