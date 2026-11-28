@@ -29,7 +29,7 @@ jobs:
             coverage: true
             experimental: false
           - mediawiki_version: '1.46'
-            smw_version: 7.4.0
+            smw_version: 7.4.1
             php_version: 8.4
             database_type: mysql
             database_image: "mariadb:12.3"
