@@ -4,5 +4,22 @@
 		"wikimedia/client",
 		"wikimedia/jquery",
 		"wikimedia/mediawiki"
+	],
+	"overrides": [
+		{
+			"files": [
+				"tests/node-qunit/**/*.js"
+			],
+			"env": {
+				"node": true,
+				"es2021": true
+			},
+			"globals": {
+				"QUnit": "readonly"
+			},
+			"parserOptions": {
+				"sourceType": "script"
+			}
+		}
 	]
 }
