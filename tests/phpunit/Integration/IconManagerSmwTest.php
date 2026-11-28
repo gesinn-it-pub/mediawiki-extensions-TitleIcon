@@ -30,7 +30,7 @@ use MediaWikiIntegrationTestCase;
  *
  * @group Database
  * @covers \MediaWiki\Extension\TitleIcon\SMWInterface
- * @covers \MediaWiki\Extension\TitleIcon\IconManager::getIcons
+ * @covers \MediaWiki\Extension\TitleIcon\IconManager
  */
 class IconManagerSmwTest extends MediaWikiIntegrationTestCase {
 	protected function setUp(): void {

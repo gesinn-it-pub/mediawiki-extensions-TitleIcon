@@ -79,6 +79,14 @@ class ParserFunctionsTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 'Icons', $icons[0]->getLink()->getDBkey() );
 	}
 
+	public function testMalformedLinkTargetIsIgnored(): void {
+		$json = $this->parse( '{{#titleicon_file:A.png|a<b}}' )->getPageProperty( Icon::ICON_PROPERTY_NAME );
+		$icons = $this->getServiceContainer()->getJsonCodec()->deserialize( $json );
+
+		$this->assertCount( 1, $icons );
+		$this->assertNull( $icons[0]->getLink() );
+	}
+
 	public function testPageWithoutIconsHasNoProperty(): void {
 		$output = $this->parse( 'plain text' );
 

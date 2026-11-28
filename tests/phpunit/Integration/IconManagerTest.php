@@ -263,7 +263,7 @@ class IconManagerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers       MediaWiki\Extension\TitleIcon\IconManager::getIcons
+	 * @covers       MediaWiki\Extension\TitleIcon\IconManager
 	 * @dataProvider provideGetIcons
 	 * @param string $testPageContent
 	 * @param string|null $testCategoryContent
@@ -295,7 +295,7 @@ class IconManagerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers \MediaWiki\Extension\TitleIcon\IconManager::getIcons
+	 * @covers \MediaWiki\Extension\TitleIcon\IconManager
 	 */
 	public function testNamespaceIconDoesNotDependOnUserLanguage() {
 		// the namespace page is named after the content language, whatever language the viewing user has
@@ -310,7 +310,7 @@ class IconManagerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers \MediaWiki\Extension\TitleIcon\IconManager::getIcons
+	 * @covers \MediaWiki\Extension\TitleIcon\IconManager
 	 */
 	public function testHideTitleIconOnOnePageDoesNotAffectOtherPages() {
 		$hidden = $this->insertPage( 'Hidden Page', '{{#titleicon_file:Icon1.png}}{{#hidetitleicon:all}}' )['title'];
@@ -325,7 +325,7 @@ class IconManagerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers \MediaWiki\Extension\TitleIcon\IconManager::getIcons
+	 * @covers \MediaWiki\Extension\TitleIcon\IconManager
 	 */
 	public function testRemovedIconsAreNotKeptWhenAPageIsParsedAgain() {
 		$title = $this->insertPage( 'Test Page', '{{#titleicon_file:Icon1.png}}' )['title'];

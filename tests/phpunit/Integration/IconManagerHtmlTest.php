@@ -28,7 +28,7 @@ use MediaWikiIntegrationTestCase;
 
 /**
  * @group Database
- * @covers \MediaWiki\Extension\TitleIcon\IconManager::getHTML
+ * @covers \MediaWiki\Extension\TitleIcon\IconManager
  */
 class IconManagerHtmlTest extends MediaWikiIntegrationTestCase {
 	private function getHtml( Icon ...$icons ): string {

@@ -22,8 +22,11 @@
 
 namespace MediaWiki\Extension\TitleIcon\Test;
 
+use ApiMain;
 use ApiTestCase;
 use MediaWiki\Extension\TitleIcon\Icon;
+use MediaWiki\Request\FauxRequest;
+use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group API
@@ -72,5 +75,14 @@ class ApiQueryTitleIconsTest extends ApiTestCase {
 		$pages = array_values( $this->queryIcons( 'Api Page That Does Not Exist' ) );
 
 		$this->assertArrayNotHasKey( 'titleicons', $pages[0] );
+	}
+
+	public function testModuleDescribesItself(): void {
+		$query = ( new ApiMain( new FauxRequest() ) )->getModuleManager()->getModule( 'query' );
+		$module = $query->getModuleManager()->getModule( 'titleicons' );
+
+		$this->assertStringContainsString( 'Extension:TitleIcon', $module->getHelpUrls() );
+		$examples = array_keys( TestingAccessWrapper::newFromObject( $module )->getExamplesMessages() );
+		$this->assertSame( [ 'action=query&prop=titleicons&titles=Main%20Page' ], $examples );
 	}
 }
