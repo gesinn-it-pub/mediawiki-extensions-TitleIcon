@@ -345,6 +345,23 @@ class IconManager {
 	}
 
 	/**
+	 * The tooltip of a file icon: the file name, or the name of the page that defines the icon, depending on the
+	 * TitleIcon_UseFileNameAsToolTip setting.
+	 *
+	 * @param Icon $icon
+	 * @return string
+	 */
+	public function getFileIconTooltip( Icon $icon ): string {
+		if ( $this->config->get( 'TitleIcon_UseFileNameAsToolTip' ) ) {
+			$fileTitle = Title::newFromText( $icon->getIcon(), NS_FILE );
+			return $fileTitle ? self::getFileTooltip( $fileTitle ) : '';
+		}
+
+		$source = Title::castFromPageReference( $icon->getSource() );
+		return $source ? $source->getPrefixedText() : '';
+	}
+
+	/**
 	 * The tooltip of a file icon is the file name without namespace prefix and without file extension.
 	 *
 	 * @param LinkTarget $file
@@ -367,11 +384,7 @@ class IconManager {
 			return '';
 		}
 
-		if ( $this->config->get( 'TitleIcon_UseFileNameAsToolTip' ) ) {
-			$tooltip = self::getFileTooltip( $filetitle );
-		} else {
-			$tooltip = $icon->getSource();
-		}
+		$tooltip = $this->getFileIconTooltip( $icon );
 
 		$linkTarget = $icon->getLink();
 		if ( !$linkTarget ) {
