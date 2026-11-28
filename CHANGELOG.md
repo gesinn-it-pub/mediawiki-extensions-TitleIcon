@@ -12,6 +12,8 @@ This project adheres to [Semantic Versioning](https://semver.org/) and
 - Find the icons of the main namespace independently of the language of the user [`a266cce`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/a266cce)
 - Show the file name without prefix and extension as tooltip, for example `Logo.v2` instead of `File:Logo` [`849e3cd`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/849e3cd)
 - Render OOUI icons only for plain `.svg` file names, so a name can no longer point outside the OOUI icon directory [`f0c39c1`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/f0c39c1)
+- Use the name of the defining page as tooltip when `$wgTitleIcon_UseFileNameAsToolTip` is off, instead of a debug string like `[0:Some_page]` [`e7c4917`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/e7c4917)
 
 ### Changed
+- Test against MariaDB 12.3 and update `mediawiki-codesniffer` to 52.0.2 and `eslint-config-wikimedia` to 0.33.1 [`09f71db`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/09f71db), [`d41f8d3`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/d41f8d3), [`d6ba9b1`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/d6ba9b1)
 - Use the namespaced MediaWiki classes instead of the deprecated global aliases [`0f17aa1`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/0f17aa1)
