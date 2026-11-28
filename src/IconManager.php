@@ -235,7 +235,23 @@ class IconManager {
 	 * @param PageReference|null $link
 	 */
 	public function parseIcons( Parser $parser, string $type, ?string $icon, ?PageReference $link ): void {
-		$source = $parser->getPage();
+		$this->storeIcon( $parser, $parser->getPage(), $type, $icon, $link );
+	}
+
+	/**
+	 * @param Parser $parser
+	 * @param PageReference|null $source the page being parsed, null if the parser has no page (MediaWiki 1.43)
+	 * @param string $type
+	 * @param string|null $icon
+	 * @param PageReference|null $link
+	 */
+	private function storeIcon(
+		Parser $parser,
+		?PageReference $source,
+		string $type,
+		?string $icon,
+		?PageReference $link
+	): void {
 		if ( !$icon || !$source ) {
 			return;
 		}
