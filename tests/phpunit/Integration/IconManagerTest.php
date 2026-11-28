@@ -337,4 +337,31 @@ class IconManagerTest extends MediaWikiIntegrationTestCase {
 		$this->assertCount( 1, $icons );
 		$this->assertSame( 'File:Icon2.png', $icons[0]->getIcon() );
 	}
+
+	/**
+	 * @covers \MediaWiki\Extension\TitleIcon\IconManager
+	 */
+	public function testIconsStoredInTheOldDoubleEncodedFormatAreRead() {
+		$page = $this->insertPage( 'Legacy Page', 'text' );
+		$codec = $this->getServiceContainer()->getJsonCodec();
+		$source = PageReferenceValue::localReference( NS_MAIN, 'Legacy Page' );
+		$icon = new Icon( $source, 'Old.png', Icon::ICON_TYPE_FILE );
+		// before MediaWiki 1.40 every icon was stored as a JSON string inside the JSON list
+		$this->getDb()->newInsertQueryBuilder()
+			->insertInto( 'page_props' )
+			->row( [
+				'pp_page' => $page['id'],
+				'pp_propname' => Icon::ICON_PROPERTY_NAME,
+				'pp_value' => json_encode( [ $codec->serialize( $icon ) ] ),
+			] )
+			->caller( __METHOD__ )
+			->execute();
+		$this->getServiceContainer()->resetServiceForTesting( 'PageProps' );
+		$this->getServiceContainer()->resetServiceForTesting( 'TitleIcon:IconManager' );
+
+		$icons = $this->getServiceContainer()->getService( 'TitleIcon:IconManager' )->getIcons( $page['title'] );
+
+		$this->assertCount( 1, $icons );
+		$this->assertSame( 'File:Old.png', $icons[0]->getIcon() );
+	}
 }
