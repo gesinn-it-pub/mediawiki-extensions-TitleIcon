@@ -24,12 +24,15 @@ namespace MediaWiki\Extension\TitleIcon\Test;
 
 use HtmlArmor;
 use MediaWiki\Config\HashConfig;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\TitleIcon\IconManager;
 use MediaWiki\Extension\TitleIcon\MainHookHandler;
+use MediaWiki\Output\OutputPage;
 use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use SearchResult;
+use Skin;
 
 /**
  * @group Database
@@ -69,6 +72,66 @@ class MainHookHandlerTest extends MediaWikiIntegrationTestCase {
 			$query,
 			$attributes
 		);
+	}
+
+	private function runPageDisplayHook( MainHookHandler $handler, Title $title ): OutputPage {
+		$out = new OutputPage( RequestContext::getMain() );
+		$skin = $this->createMock( Skin::class );
+		$skin->method( 'getTitle' )->willReturn( $title );
+		$handler->onBeforePageDisplay( $out, $skin );
+		return $out;
+	}
+
+	public function testPageDisplayAddsIconsAndModule(): void {
+		$out = $this->runPageDisplayHook( $this->newHandler( self::ICON_HTML ), Title::makeTitle( NS_MAIN, 'Foo' ) );
+
+		$vars = $out->getJsConfigVars();
+		$this->assertSame( self::ICON_HTML, $vars['TitleIconHTML'] );
+		$this->assertSame( '#firstHeading', $vars['TitleIconSelector'] );
+		$this->assertContains( 'ext.TitleIcon', $out->getModules() );
+	}
+
+	public function testPageDisplayWithoutIconsAddsNothing(): void {
+		$out = $this->runPageDisplayHook( $this->newHandler( '' ), Title::makeTitle( NS_MAIN, 'Foo' ) );
+
+		$this->assertArrayNotHasKey( 'TitleIconHTML', $out->getJsConfigVars() );
+		$this->assertNotContains( 'ext.TitleIcon', $out->getModules() );
+	}
+
+	public function testPageDisplayIgnoresSpecialPages(): void {
+		$out = $this->runPageDisplayHook(
+			$this->newHandler( self::ICON_HTML ),
+			Title::makeTitle( NS_SPECIAL, 'Search' )
+		);
+
+		$this->assertArrayNotHasKey( 'TitleIconHTML', $out->getJsConfigVars() );
+	}
+
+	public function testPageDisplayCanBeDisabled(): void {
+		$iconManager = $this->createMock( IconManager::class );
+		$iconManager->expects( $this->never() )->method( 'getIcons' );
+		$handler = new MainHookHandler(
+			$iconManager,
+			new HashConfig( [ 'TitleIcon_EnableIconInPageTitle' => false ] )
+		);
+
+		$out = $this->runPageDisplayHook( $handler, Title::makeTitle( NS_MAIN, 'Foo' ) );
+
+		$this->assertArrayNotHasKey( 'TitleIconHTML', $out->getJsConfigVars() );
+	}
+
+	public function testSearchHitCanBeDisabled(): void {
+		$iconManager = $this->createMock( IconManager::class );
+		$iconManager->expects( $this->never() )->method( 'getIcons' );
+		$handler = new MainHookHandler(
+			$iconManager,
+			new HashConfig( [ 'TitleIcon_EnableIconInSearchTitle' => false ] )
+		);
+
+		$snippet = null;
+		$this->runSearchHook( $handler, $snippet );
+
+		$this->assertNull( $snippet );
 	}
 
 	public function testSearchHitSnippetContainsNoNestedLinks(): void {
