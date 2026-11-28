@@ -1,13 +1,55 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": [ "config:recommended", ":semanticCommitTypeAll(deps)", ":semanticCommitScopeDisabled" ],
+	"extends": [
+		"config:recommended",
+		":semanticCommitTypeAll(deps)",
+		":semanticCommitScopeDisabled"
+	],
 	"semanticCommits": "enabled",
 	"rebaseWhen": "behind-base-branch",
+	"customManagers": [
+		{
+			"customType": "regex",
+			"description": "Track each SemanticMediaWiki CI matrix leg as its own dependency (keyed by the leg's mediawiki_version), since smw_version flows into build/Dockerfile's composer-require call and plain detection in ci.yml does not see it at all.",
+			"managerFilePatterns": [
+				"/^\\.github/workflows/ci\\.yml$/"
+			],
+			"matchStrings": [
+				"mediawiki_version:\\s*'(?<mwVersion>[0-9.]+)'[^\\n]*(?:\\n[^\\n]*){1,2}?smw_version:\\s*(?<currentValue>[0-9.]+)"
+			],
+			"depNameTemplate": "smw-mw{{{mwVersion}}}",
+			"datasourceTemplate": "github-releases",
+			"packageNameTemplate": "SemanticMediaWiki/SemanticMediaWiki"
+		}
+	],
 	"packageRules": [
 		{
-			"matchPackageNames": [ "grunt-eslint" ],
+			"matchPackageNames": [
+				"grunt-eslint"
+			],
 			"allowedVersions": "<25",
 			"description": "grunt-eslint 25+ bundles eslint 9+, but eslint-config-wikimedia 0.32.x requires eslint ^8.57 and .eslintrc.json is the legacy format. Remove this ceiling once eslint-config-wikimedia and the ESLint configuration are moved to eslint 9 and the flat config format, and upgrade them together in the same PR (checked 2026-11-28)."
+		},
+		{
+			"matchDepNames": [
+				"smw-mw1.43"
+			],
+			"allowedVersions": "<8.0.0",
+			"description": "The MW 1.43 CI leg tests SMW 7.x. A new SMW major has not been verified against this extension yet, so keep it below 8.0.0 until a leg has run green with it."
+		},
+		{
+			"matchDepNames": [
+				"smw-mw1.46"
+			],
+			"allowedVersions": "<8.0.0",
+			"description": "The MW 1.46 CI leg tests SMW 7.x. A new SMW major has not been verified against this extension yet, so keep it below 8.0.0 until a leg has run green with it."
+		},
+		{
+			"matchPackageNames": [
+				"mariadb"
+			],
+			"allowedVersions": "<13.0.0",
+			"description": "Both CI legs use the same mariadb:12.x image (single value, so no per-leg split). Keep it on the 12.x line the other extensions test against until a newer major has been verified."
 		}
 	]
 }
