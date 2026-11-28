@@ -15,5 +15,6 @@ This project adheres to [Semantic Versioning](https://semver.org/) and
 - Use the name of the defining page as tooltip when `$wgTitleIcon_UseFileNameAsToolTip` is off, instead of a debug string like `[0:Some_page]` [`e7c4917`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/e7c4917)
 
 ### Changed
+- Test against MediaWiki 1.46 in addition to 1.43, and keep static analysis valid on both [`25b154e`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/25b154e), [`f404b99`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/f404b99)
 - Test against MariaDB 12.3 and update `mediawiki-codesniffer` to 52.0.2 and `eslint-config-wikimedia` to 0.33.1 [`09f71db`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/09f71db), [`d41f8d3`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/d41f8d3), [`d6ba9b1`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/d6ba9b1)
 - Use the namespaced MediaWiki classes instead of the deprecated global aliases [`0f17aa1`](https://github.com/gesinn-it-pub/mediawiki-extensions-TitleIcon/commit/0f17aa1)
